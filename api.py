@@ -118,6 +118,7 @@ class GitHubWebhook(Resource):
             if content['ref'] == 'refs/heads/main':
                 systemd_service = 'jbdetectapi'
                 os.system(f'git pull')
+                os.system(f'git submodule update --recursive --remote')
                 os.system(f'sudo /bin/systemctl restart {systemd_service}')
         else:
             return "Signatures didn't match!", 500
