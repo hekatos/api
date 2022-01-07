@@ -82,7 +82,7 @@ The API uses uWSGI, so you should install that:
 pip install uwsgi
 ```
 
-Then, create a file called `app.ini` that should ideally be under `openapi/`:
+Then, create a file called `app.ini`:
 ```ini
 [uwsgi]
 module = api:app
@@ -97,7 +97,7 @@ vacuum = true
 die-on-term = true
 ```
 
-Create a systemd service (change `/var/www/jbdetectlist` to where you put the API):
+Create a systemd service (change `/var/www/hekatosapi` to where you put the API):
 ```ini
 [Unit]
 Description='An API for querying jailbreak bypasses'
@@ -107,8 +107,8 @@ After=network.target
 Environment=GITHUB_WEBHOOK_SECRET=<This is for webhooking>
 User=www-data
 Group=root
-WorkingDirectory=/var/www/jbdetectlist/openapi
-ExecStart=/var/www/jbdetectlist/env/bin/uwsgi --ini api.ini
+WorkingDirectory=/var/www/hekatosapi
+ExecStart=/var/www/hekatosapi/env/bin/uwsgi --ini api.ini
 
 [Install]
 WantedBy=multi-user.target
@@ -127,7 +127,7 @@ server {
     location /api/v1 {
         rewrite ^/api/v1/(.*) /$1 break;
         include uwsgi_params;
-        uwsgi_pass unix:/var/www/jbdetectlist/openapi/api.sock;
+        uwsgi_pass unix:/var/www/hekatosapi/api.sock;
     }
 }
 ```
