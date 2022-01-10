@@ -2,27 +2,13 @@ import os
 import yaml
 import hmac
 import hashlib
-
+import utils
 from flask import Flask, request
 from flask_restful import Resource, Api, reqparse
+from functools import lru_cache
 
-from fuzzywuzzy import fuzz
-
-
-def return_results(list_of_dicts, query, threshold):
-    query = query.lower()
-    scores = list()
-    for index, item in enumerate(list_of_dicts):
-        values = [item['name'].lower(), item['bundleId'].lower()]
-        ratios, partial_ratios = [fuzz.ratio(str(query), str(value)) for value in values], [fuzz.partial_ratio(str(query), str(value)) for value in values] # ensure both are in string
-        scores.append({"index": index, "partial_score": max(partial_ratios), "score": max(ratios)})
-
-    filtered_scores = [item for item in scores if item['score'] >= threshold or item['partial_score'] >= threshold]
-    sorted_filtered_scores = sorted(filtered_scores, key = lambda k: (k['score'], k['partial_score']), reverse=True)
-    if len(sorted_filtered_scores) > 0 and sorted_filtered_scores[0]['score'] == 100:
-        return [list_of_dicts[sorted_filtered_scores[0]['index']]]
-    filtered_list_of_dicts = [list_of_dicts[item["index"]] for item in sorted_filtered_scores]
-    return filtered_list_of_dicts
+app = Flask(__name__)
+api = Api(app)
 
 
 def init_db(manifests_dir):
@@ -44,67 +30,61 @@ def init_db(manifests_dir):
     return bypasses, apps, db_data
 
 
-def markdown_link(name, uri, sharerepo=False):
-    sharerepo_site = "https://sharerepo.stkc.win/?repo="
-    return f"[{name}]({sharerepo_site}{uri})" if sharerepo else f"[{name}]({uri})"
+bypasses, apps, db = init_db(os.path.join('manifests'))
+@app.route('/app', methods=['GET'])
+def get_bypass_for_app():
+    parser = reqparse.RequestParser()
+    parser.add_argument('search', required=False)
+    parser.add_argument('fields', required=False)
 
-class App(Resource):
-    def __init__(self):
-        self.bypasses, self.apps, self.db = init_db(os.path.join('manifests'))
+    args = parser.parse_args()
+    if args.search is None:
+        return {'status': 'Successful', 'data': apps}
+    else:
+        search_results = utils.return_results(db, args.search, 90)
 
-    def get(self):
-        parser = reqparse.RequestParser()
-        parser.add_argument('search', required=False)
-        parser.add_argument('fields', required=False)
+        for index, res in enumerate(search_results):
+            if res['bypasses']:
+                bypass_notes = list()
+                detailed_bypass_info = list()
+                downgrade_noted = False
+                for bypass in res['bypasses']:
+                    if 'name' in bypass:
+                        notes_from_bypass = bypasses[bypass['name']]['notes'] \
+                                            if 'notes' in bypasses[bypass['name']] \
+                                            else None
+                        if 'guide' in bypasses[bypass['name']]:
+                            bypass['guide'] = bypasses[bypass['name']]['guide']
 
-        args = parser.parse_args()
-        if args.search is None:
-            return {'status': 'Successful', 'data': self.apps}
-        else:
-            search_results = return_results(self.db, args.search, 90)
+                        if 'repository' in bypasses[bypass['name']]:
+                            bypass['repository'] = bypasses[bypass['name']]['repository']
+                            bypass['repository']['uri'] = f"https://sharerepo.stkc.win/?repo={bypasses[bypass['name']]['repository']['uri']}"
+                        else:
+                            bypass['repository'] = None
 
-            for index, res in enumerate(search_results):
-                if res['bypasses']:
-                    bypass_notes = list()
-                    detailed_bypass_info = list()
-                    downgrade_noted = False
-                    for bypass in res['bypasses']:
-                        if 'name' in bypass:
-                            notes_from_bypass = self.bypasses[bypass['name']]['notes'] \
-                                                if 'notes' in self.bypasses[bypass['name']] \
+                        if not downgrade_noted and 'version' in bypass and bypass['name'] != "AppStore++":
+                            bypass_notes.append(
+                                f"Use AppStore++ ({utils.markdown_link('repo', bypasses['AppStore++']['repository']['uri'], sharerepo=True)}) to downgrade.")
+                            downgrade_noted = True
+
+                        notes_from_bypass = f"{bypasses[bypass['name']]['notes']}" \
+                                                if 'notes' in bypasses[bypass['name']] \
                                                 else None
-                            if 'guide' in self.bypasses[bypass['name']]:
-                                bypass['guide'] = self.bypasses[bypass['name']]['guide']
+                        notes_from_manifest = bypass['notes'] \
+                                                if 'notes' in bypass \
+                                                else None
+                        if notes_from_bypass or notes_from_manifest:
+                            bypass_notes.append(' '.join(filter(None, [notes_from_bypass, notes_from_manifest])))
+                        if bypass_notes:
+                            bypass['notes'] = '\n'.join(bypass_notes)
 
-                            if 'repository' in self.bypasses[bypass['name']]:
-                                bypass['repository'] = self.bypasses[bypass['name']]['repository']
-                                bypass['repository']['uri'] = f"https://sharerepo.stkc.win/?repo={self.bypasses[bypass['name']]['repository']['uri']}"
-                            else:
-                                bypass['repository'] = None
+                    detailed_bypass_info.append(bypass)
+                search_results[index]['bypasses'] = detailed_bypass_info
 
-                            if not downgrade_noted and 'version' in bypass and bypass['name'] != "AppStore++":
-                                bypass_notes.append(
-                                    f"Use AppStore++ ({markdown_link('repo', self.bypasses['AppStore++']['repository']['uri'], sharerepo=True)}) to downgrade.")
-                                downgrade_noted = True
-
-                            notes_from_bypass = f"{self.bypasses[bypass['name']]['notes']}" \
-                                                    if 'notes' in self.bypasses[bypass['name']] \
-                                                    else None
-                            notes_from_manifest = bypass['notes'] \
-                                                    if 'notes' in bypass \
-                                                    else None
-                            if notes_from_bypass or notes_from_manifest:
-                                bypass_notes.append(' '.join(filter(None, [notes_from_bypass, notes_from_manifest])))
-                            if bypass_notes:
-                                bypass['notes'] = '\n'.join(bypass_notes)
-
-                        detailed_bypass_info.append(bypass)
-                    search_results[index]['bypasses'] = detailed_bypass_info
-
-            if search_results:
-                return {'status': 'Successful', 'data': search_results}
-            else:
-                return {'status': 'Not Found'}
+        if search_results:
+            return {'status': 'Successful', 'data': search_results}
+        else:
+            return {'status': 'Not Found'}
 
 
 class GitHubWebhook(Resource):
@@ -124,9 +104,6 @@ class GitHubWebhook(Resource):
             return "Signatures didn't match!", 500
 
 
-app = Flask(__name__)
-api = Api(app)
-api.add_resource(App, '/app')
 if 'GITHUB_WEBHOOK_SECRET' in os.environ:
     api.add_resource(GitHubWebhook, '/gh-webhook')
 
