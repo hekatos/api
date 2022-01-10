@@ -28,3 +28,4 @@ def return_results(list_of_dicts, query, threshold, list_for_search=None):
         return [list_of_dicts[sorted_filtered_scores[0]['index']]]
     filtered_list_of_dicts = [list_of_dicts[item["index"]] for item in sorted_filtered_scores]
     return filtered_list_of_dicts
+
