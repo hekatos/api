@@ -13,10 +13,10 @@ def generate_list_for_search(list_of_dicts):
     return values
 
 
-def return_results(list_of_dicts, query, threshold):
+def return_results(list_of_dicts, query, threshold, list_for_search=None):
     query = query.lower()
     scores = list()
-    values = generate_list_for_search(list_of_dicts)
+    values = list_for_search if list_for_search else generate_list_for_search(list_of_dicts)
     for index, item in enumerate(values):
         ratios = [fuzz.ratio(str(query), str(value)) for value in item]
         partial_ratios = [fuzz.partial_ratio(str(query), str(value)) for value in item] # ensure both are in string
