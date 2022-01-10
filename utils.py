@@ -1,5 +1,26 @@
+import os
+import yaml
 from fuzzywuzzy import fuzz
 from typing import Optional
+
+
+def init_db(manifests_dir: str) -> tuple[dict, list, dict]:
+    __scriptdir = os.path.dirname(os.path.realpath(__file__))
+    bypasses_file = os.path.join(__scriptdir, manifests_dir, 'bypasses.yaml')
+    apps_dir = os.path.join(__scriptdir, manifests_dir, 'apps')
+
+    with open(bypasses_file, encoding='utf-8') as file:
+        bypasses = yaml.safe_load(file)
+
+    db_data = list()
+    apps_files = [os.path.join(apps_dir, f) for f in os.listdir(apps_dir) if os.path.isfile(os.path.join(apps_dir, f)) and os.path.splitext(f)[-1].lower() == '.yaml']
+    for app_file in apps_files:
+        with open(app_file, encoding='utf-8') as file:
+            app = yaml.safe_load(file.read())
+        db_data.append(app)
+    apps = [x['name'] for x in db_data]
+    apps.sort(key=lambda a: a.lower())
+    return bypasses, apps, db_data
 
 
 def markdown_link(name: str, uri: str, sharerepo: Optional[bool] = False) -> str:
