@@ -48,7 +48,7 @@ def get_bypass_for_app():
     if args.search is None:
         return {'status': 'Successful', 'data': apps}
     else:
-        search_results = return_results_hashable(args.search, 90)
+        search_results = return_results_hashable(args.search.lower(), 90)
 
         for index, res in enumerate(search_results):
             if res['bypasses']:
