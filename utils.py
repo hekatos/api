@@ -1,7 +1,8 @@
 from fuzzywuzzy import fuzz
+from typing import Optional
 
 
-def markdown_link(name: str, uri: str, sharerepo: bool = False) -> str:
+def markdown_link(name: str, uri: str, sharerepo: Optional[bool] = False) -> str:
     sharerepo_site = "https://sharerepo.stkc.win/?repo="
     return f"[{name}]({sharerepo_site}{uri})" if sharerepo else f"[{name}]({uri})"
 
@@ -13,7 +14,7 @@ def generate_list_for_search(list_of_dicts: list[dict]) -> list[list]:
     return values
 
 
-def return_results(list_of_dicts: list[dict], query: str, threshold: int, list_for_search: list[list] = None) -> list[dict]:
+def return_results(list_of_dicts: list[dict], query: str, threshold: int, list_for_search: Optional[list[list]] = None) -> list[dict]:
     query = query.lower()
     scores = list()
     values = list_for_search if list_for_search else generate_list_for_search(list_of_dicts)
