@@ -38,6 +38,7 @@ search_list = utils.generate_list_for_search(db)
 def return_results_hashable(query, threshold):
     return utils.return_results(db, query, threshold, search_list)
 
+
 @app.route('/app', methods=['GET'])
 def get_bypass_for_app():
     parser = reqparse.RequestParser()
@@ -58,8 +59,8 @@ def get_bypass_for_app():
                 for bypass in res['bypasses']:
                     if 'name' in bypass:
                         notes_from_bypass = bypasses[bypass['name']]['notes'] \
-                                            if 'notes' in bypasses[bypass['name']] \
-                                            else None
+                            if 'notes' in bypasses[bypass['name']] \
+                            else None
                         if 'guide' in bypasses[bypass['name']]:
                             bypass['guide'] = bypasses[bypass['name']]['guide']
 
@@ -75,11 +76,11 @@ def get_bypass_for_app():
                             downgrade_noted = True
 
                         notes_from_bypass = f"{bypasses[bypass['name']]['notes']}" \
-                                                if 'notes' in bypasses[bypass['name']] \
-                                                else None
+                            if 'notes' in bypasses[bypass['name']] \
+                            else None
                         notes_from_manifest = bypass['notes'] \
-                                                if 'notes' in bypass \
-                                                else None
+                            if 'notes' in bypass \
+                            else None
                         if notes_from_bypass or notes_from_manifest:
                             bypass_notes.append(' '.join(filter(None, [notes_from_bypass, notes_from_manifest])))
                         if bypass_notes:
@@ -107,8 +108,8 @@ class GitHubWebhook(Resource):
                     return "Restarting API...", 200
                 finally:
                     systemd_service = 'jbdetectapi'
-                    os.system(f'git pull')
-                    os.system(f'git submodule update --recursive --remote')
+                    os.system('git pull')
+                    os.system('git submodule update --recursive --remote')
                     os.system(f'sudo /bin/systemctl restart {systemd_service}')
         else:
             return "Signatures didn't match!", 500
@@ -120,6 +121,3 @@ if 'GITHUB_WEBHOOK_SECRET' in os.environ:
 
 if __name__ == '__main__':
     app.run(debug=True)
-
-
-
