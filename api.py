@@ -32,6 +32,12 @@ def init_db(manifests_dir):
 
 bypasses, apps, db = init_db(os.path.join('manifests'))
 search_list = utils.generate_list_for_search(db)
+
+
+@lru_cache(maxsize=16)
+def return_results_hashable(query, threshold):
+    return utils.return_results(db, query, threshold, search_list)
+
 @app.route('/app', methods=['GET'])
 def get_bypass_for_app():
     parser = reqparse.RequestParser()
@@ -42,7 +48,7 @@ def get_bypass_for_app():
     if args.search is None:
         return {'status': 'Successful', 'data': apps}
     else:
-        search_results = utils.return_results(db, args.search, 90, search_list)
+        search_results = return_results_hashable(args.search, 90)
 
         for index, res in enumerate(search_results):
             if res['bypasses']:
