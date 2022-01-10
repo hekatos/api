@@ -1,19 +1,19 @@
 from fuzzywuzzy import fuzz
 
 
-def markdown_link(name, uri, sharerepo=False):
+def markdown_link(name: str, uri: str, sharerepo: bool = False) -> str:
     sharerepo_site = "https://sharerepo.stkc.win/?repo="
     return f"[{name}]({sharerepo_site}{uri})" if sharerepo else f"[{name}]({uri})"
 
 
-def generate_list_for_search(list_of_dicts):
+def generate_list_for_search(list_of_dicts: list[dict]) -> list[list]:
     values = list()
     for item in list_of_dicts:
         values.append([item['name'].lower(), item['bundleId'].lower()])
     return values
 
 
-def return_results(list_of_dicts, query, threshold, list_for_search=None):
+def return_results(list_of_dicts: list[dict], query: str, threshold: int, list_for_search: list[list] = None) -> list[dict]:
     query = query.lower()
     scores = list()
     values = list_for_search if list_for_search else generate_list_for_search(list_of_dicts)

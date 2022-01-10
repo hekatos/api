@@ -11,7 +11,7 @@ app = Flask(__name__)
 api = Api(app)
 
 
-def init_db(manifests_dir):
+def init_db(manifests_dir: str) -> tuple[dict, list, dict]:
     __scriptdir = os.path.dirname(os.path.realpath(__file__))
     bypasses_file = os.path.join(__scriptdir, manifests_dir, 'bypasses.yaml')
     apps_dir = os.path.join(__scriptdir, manifests_dir, 'apps')
@@ -35,7 +35,7 @@ search_list = utils.generate_list_for_search(db)
 
 
 @lru_cache(maxsize=16)
-def return_results_hashable(query, threshold):
+def return_results_hashable(query: str, threshold: int) -> list[dict]:
     return utils.return_results(db, query, threshold, search_list)
 
 
