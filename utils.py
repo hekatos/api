@@ -1,4 +1,5 @@
 import os
+import json
 import yaml
 from fuzzywuzzy import fuzz
 from typing import Optional
@@ -17,10 +18,51 @@ def init_db(manifests_dir: str) -> tuple[dict, list, dict]:
     for app_file in apps_files:
         with open(app_file, encoding='utf-8') as file:
             app = yaml.safe_load(file.read())
-        db_data.append(app)
+        if app['bypasses']:
+            bypass_notes = list()
+            detailed_bypass_info = list()
+            downgrade_noted = False
+            for bypass in app['bypasses']:
+                if 'name' in bypass:
+                    notes_from_bypass = bypasses[bypass['name']]['notes'] \
+                        if 'notes' in bypasses[bypass['name']] \
+                        else None
+                    if 'guide' in bypasses[bypass['name']]:
+                        bypass['guide'] = bypasses[bypass['name']]['guide']
+
+                    if 'repository' in bypasses[bypass['name']]:
+                        bypass['repository'] = bypasses[bypass['name']]['repository']
+                        bypass['repository']['uri'] = f"https://sharerepo.stkc.win/?repo={bypasses[bypass['name']]['repository']['uri']}" \
+                            if not bypass['repository']['uri'].startswith("https://sharerepo.stkc.win/?repo=") \
+                            else bypass['repository']['uri']
+                    else:
+                        bypass['repository'] = None
+
+                    if not downgrade_noted and 'version' in bypass and bypass['name'] != "AppStore++":
+                        bypass_notes.append(
+                            f"Use AppStore++ ({markdown_link('repo', bypasses['AppStore++']['repository']['uri'], sharerepo=True)}) to downgrade.")
+                        downgrade_noted = True
+
+                    notes_from_bypass = f"{bypasses[bypass['name']]['notes']}" \
+                        if 'notes' in bypasses[bypass['name']] \
+                        else None
+                    notes_from_manifest = bypass['notes'] \
+                        if 'notes' in bypass \
+                        else None
+                    if notes_from_bypass or notes_from_manifest:
+                        bypass_notes.append(' '.join(filter(None, [notes_from_bypass, notes_from_manifest])))
+                    if bypass_notes:
+                        bypass['notes'] = '\n'.join(bypass_notes)
+
+                detailed_bypass_info.append(bypass)
+            app['bypasses'] = detailed_bypass_info
+            db_data.append(app)
+
     apps = [x['name'] for x in db_data]
     apps.sort(key=lambda a: a.lower())
-    return bypasses, apps, db_data
+
+    with open('database.json', 'w') as f:
+        f.write(json.dumps({'app_list': apps, 'bypass_information': db_data}))
 
 
 def markdown_link(name: str, uri: str, sharerepo: Optional[bool] = False) -> str:
