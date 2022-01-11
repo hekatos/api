@@ -5,20 +5,18 @@ import utils
 import json
 from flask import Flask, request
 from flask_restful import Resource, Api, reqparse
-
+from cachetools.func import ttl_cache
 
 app = Flask(__name__)
 api = Api(app)
-
-
-# SEARCH_LIST = utils.generate_list_for_search(DATABASE)
-
-
-# def return_results_hashable(query: str, threshold: int) -> list[dict]:
-#     return utils.return_results(DATABASE, query, threshold, SEARCH_LIST)
-
-
 utils.init_db(os.path.join('manifests'))
+
+
+@ttl_cache(maxsize=64, ttl=3600)
+def return_results_hashable(query: str, threshold: int) -> list[dict]:
+    with open('database.json', 'r') as f:
+        database = json.loads(f.read())['bypass_information']
+        return utils.return_results(database, query, threshold, utils.generate_list_for_search('database.json'))
 
 
 class App(Resource):
@@ -33,7 +31,7 @@ class App(Resource):
                 return {'status': 'Successful', 'data': json.loads(f.read())['app_list']}
         else:
             with open('database.json', 'r') as f:
-                search_results = utils.return_results(json.loads(f.read())['bypass_information'], args.search, 90)
+                search_results = return_results_hashable(args.search.lower(), 90)
             if search_results:
                 return {'status': 'Successful', 'data': search_results}
             else:
@@ -54,12 +52,9 @@ class GitHubWebhook(Resource):
                     utils.init_db(os.path.join('manifests'))
                     return "Rebuilt database", 200
                 elif 'api' in content['repository']['full_name']:
-                    try:
-                        return "Restarting API...", 200
-                    finally:
-                        systemd_service = 'jbdetectapi'
-                        os.system('git pull')
-                        os.system(f'sudo /bin/systemctl restart {systemd_service}')
+                    systemd_service = 'jbdetectapi'
+                    os.system('git pull')
+                    os.system(f'sudo /bin/systemctl restart {systemd_service}')
         else:
             return "Signatures didn't match!", 500
 

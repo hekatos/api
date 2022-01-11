@@ -3,6 +3,7 @@ import json
 import yaml
 from fuzzywuzzy import fuzz
 from typing import Optional
+from functools import cache
 
 
 def init_db(manifests_dir: str) -> tuple[dict, list, dict]:
@@ -70,7 +71,11 @@ def markdown_link(name: str, uri: str, sharerepo: Optional[bool] = False) -> str
     return f"[{name}]({sharerepo_site}{uri})" if sharerepo else f"[{name}]({uri})"
 
 
-def generate_list_for_search(list_of_dicts: list[dict]) -> list[list]:
+@cache
+def generate_list_for_search(json_file: str) -> list[list]:
+    with open(json_file, 'r') as f:
+        list_of_dicts = json.loads(f.read())['bypass_information']
+
     values = list()
     for item in list_of_dicts:
         values.append([item['name'].lower(), item['bundleId'].lower()])
