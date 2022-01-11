@@ -49,13 +49,17 @@ class GitHubWebhook(Resource):
         if hmac.compare_digest(signature, request.headers.get('X-Hub-Signature-256')):
             content = request.json
             if content['ref'] == 'refs/heads/main':
-                try:
-                    return "Restarting API...", 200
-                finally:
-                    systemd_service = 'jbdetectapi'
-                    os.system('git pull')
+                if 'manifests' in content['repository']['full_name']:
                     os.system('git submodule update --recursive --remote')
-                    os.system(f'sudo /bin/systemctl restart {systemd_service}')
+                    utils.init_db(os.path.join('manifests'))
+                    return "Rebuilt database", 200
+                elif 'api' in content['repository']['full_name']:
+                    try:
+                        return "Restarting API...", 200
+                    finally:
+                        systemd_service = 'jbdetectapi'
+                        os.system('git pull')
+                        os.system(f'sudo /bin/systemctl restart {systemd_service}')
         else:
             return "Signatures didn't match!", 500
 
