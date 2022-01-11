@@ -57,7 +57,7 @@ def init_db(manifests_dir: str) -> tuple[dict, list, dict]:
 
                 detailed_bypass_info.append(bypass)
             app['bypasses'] = detailed_bypass_info
-            db_data.append(app)
+        db_data.append(app)
 
     apps = [x['name'] for x in db_data]
     apps.sort(key=lambda a: a.lower())
