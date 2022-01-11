@@ -1,5 +1,5 @@
 import os
-import json
+import orjson
 import yaml
 from fuzzywuzzy import fuzz
 from typing import Optional
@@ -15,6 +15,7 @@ def init_db(manifests_dir: str) -> tuple[dict, list, dict]:
         bypasses = yaml.safe_load(file)
 
     db_data = list()
+    search_list = list()
     apps_files = [os.path.join(apps_dir, f) for f in os.listdir(apps_dir) if os.path.isfile(os.path.join(apps_dir, f)) and os.path.splitext(f)[-1].lower() == '.yaml']
     for app_file in apps_files:
         with open(app_file, encoding='utf-8') as file:
@@ -58,12 +59,12 @@ def init_db(manifests_dir: str) -> tuple[dict, list, dict]:
                 detailed_bypass_info.append(bypass)
             app['bypasses'] = detailed_bypass_info
         db_data.append(app)
-
+        search_list.append([app['name'].lower(), app['bundleId'].lower()])
     apps = [x['name'] for x in db_data]
     apps.sort(key=lambda a: a.lower())
 
-    with open('database.json', 'w') as f:
-        f.write(json.dumps({'app_list': apps, 'bypass_information': db_data}))
+    with open('database.json', 'wb') as f:
+        f.write(orjson.dumps({'app_list': apps, 'search_list': search_list, 'bypass_information': db_data}))
 
 
 def markdown_link(name: str, uri: str, sharerepo: Optional[bool] = False) -> str:
@@ -73,13 +74,9 @@ def markdown_link(name: str, uri: str, sharerepo: Optional[bool] = False) -> str
 
 @cache
 def generate_list_for_search(json_file: str) -> list[list]:
-    with open(json_file, 'r') as f:
-        list_of_dicts = json.loads(f.read())['bypass_information']
-
-    values = list()
-    for item in list_of_dicts:
-        values.append([item['name'].lower(), item['bundleId'].lower()])
-    return values
+    with open(json_file, 'rb') as f:
+        list_of_dicts = orjson.loads(f.read())['search_list']
+        return list_of_dicts
 
 
 def return_results(list_of_dicts: list[dict], query: str, threshold: int, list_for_search: Optional[list[list]] = None) -> list[dict]:

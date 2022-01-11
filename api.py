@@ -2,7 +2,7 @@ import os
 import hmac
 import hashlib
 import utils
-import json
+import orjson
 from flask import Flask, request
 from flask_restful import Resource, Api, reqparse
 from cachetools.func import ttl_cache
@@ -14,8 +14,8 @@ utils.init_db(os.path.join('manifests'))
 
 @ttl_cache(maxsize=64, ttl=3600)
 def return_results_hashable(query: str, threshold: int) -> list[dict]:
-    with open('database.json', 'r') as f:
-        database = json.loads(f.read())['bypass_information']
+    with open('database.json', 'rb') as f:
+        database = orjson.loads(f.read())['bypass_information']
         return utils.return_results(database, query, threshold, utils.generate_list_for_search('database.json'))
 
 
@@ -27,11 +27,10 @@ class App(Resource):
 
         args = parser.parse_args()
         if args.search is None:
-            with open('database.json', 'r') as f:
-                return {'status': 'Successful', 'data': json.loads(f.read())['app_list']}
+            with open('database.json', 'rb') as f:
+                return {'status': 'Successful', 'data': orjson.loads(f.read())['app_list']}
         else:
-            with open('database.json', 'r') as f:
-                search_results = return_results_hashable(args.search.lower(), 90)
+            search_results = return_results_hashable(args.search.lower(), 90)
             if search_results:
                 return {'status': 'Successful', 'data': search_results}
             else:
