@@ -65,8 +65,10 @@ def init_db(manifests_dir: str) -> tuple[dict, list, dict]:
 
     with open('database.json', 'wb') as f:
         f.write(orjson.dumps({'app_list': apps, 'search_list': search_list, 'bypass_information': db_data}))
+    markdown_link.cache_clear()
 
 
+@cache
 def markdown_link(name: str, uri: str, sharerepo: Optional[bool] = False) -> str:
     sharerepo_site = "https://sharerepo.stkc.win/?repo="
     return f"[{name}]({sharerepo_site}{uri})" if sharerepo else f"[{name}]({uri})"
