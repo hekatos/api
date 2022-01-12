@@ -4,9 +4,10 @@ import hashlib
 import utils
 import orjson
 import simdjson
-from flask import Flask, request
+from flask import Flask, request, redirect
 from flask_restful import reqparse
 from cachetools.func import ttl_cache
+from werkzeug.exceptions import HTTPException
 
 app = Flask(__name__)
 app.config['JSON_SORT_KEYS'] = False
@@ -22,6 +23,11 @@ def return_results_hashable(query: str, threshold: int) -> list[dict]:
     with open('database.json', 'rb') as f:
         database = jsonparser.parse(f.read()).at_pointer('/bypass_information')
         return utils.return_results(database, query, threshold, utils.generate_list_for_search('database.json'))
+
+
+@app.errorhandler(HTTPException)
+def handle_exception(e):
+    return redirect(f"https://http.cat/{e.code}", code=302)
 
 
 @app.route('/app', methods=["GET"])
