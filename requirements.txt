@@ -14,3 +14,4 @@ PyYAML==6.0
 rapidfuzz==1.9.1
 six==1.16.0
 Werkzeug==2.0.2
+pysimdjson==4.0.3 # Or cysimdjson if you can build that, better performance

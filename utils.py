@@ -1,5 +1,6 @@
 import os
 import orjson
+import simdjson
 import yaml
 from rapidfuzz import fuzz
 from typing import Optional
@@ -82,11 +83,12 @@ def markdown_link(name: str, uri: str, sharerepo: bool = False) -> str:
 @cache
 def generate_list_for_search(json_file: str) -> list[list]:
     with open(json_file, 'rb') as f:
-        list_of_dicts = orjson.loads(f.read())['search_list']
+        parser = simdjson.Parser()
+        list_of_dicts = parser.parse(f.read()).at_pointer('/search_list').as_list()
         return list_of_dicts
 
 
-def return_results(list_of_dicts: list[dict], query: str, threshold: int, list_for_search: Optional[list[list]] = None) -> list[dict]:
+def return_results(list_of_dicts: simdjson.Object, query: str, threshold: int, list_for_search: Optional[list[list]] = None) -> list[dict]:
     query = query.lower()
     scores = list()
     values = list_for_search if list_for_search else generate_list_for_search('database.json')
@@ -104,6 +106,6 @@ def return_results(list_of_dicts: list[dict], query: str, threshold: int, list_f
 
     sorted_filtered_scores = sorted(scores, key=lambda k: (k['score'], k['partial_score']), reverse=True)
     if len(sorted_filtered_scores) > 0 and sorted_filtered_scores[0]['score'] == 100:
-        return [list_of_dicts[int(sorted_filtered_scores[0]['index'])]]
-    filtered_list_of_dicts = [list_of_dicts[int(item['index'])] for item in sorted_filtered_scores]
+        return [list_of_dicts.at_pointer(f"/{sorted_filtered_scores[0]['index']}").as_dict()]
+    filtered_list_of_dicts = [list_of_dicts.at_pointer(f"/{item['index']}").as_dict() for item in sorted_filtered_scores]
     return filtered_list_of_dicts

@@ -3,6 +3,7 @@ import hmac
 import hashlib
 import utils
 import orjson
+import simdjson
 from flask import Flask, request
 from flask_restful import reqparse
 from cachetools.func import ttl_cache
@@ -13,24 +14,25 @@ app.config['JSON_AS_ASCII'] = False
 
 
 utils.init_db(os.path.join('manifests'))
+jsonparser = simdjson.Parser()
 
 
 @ttl_cache(maxsize=128, ttl=3600)
 def return_results_hashable(query: str, threshold: int) -> list[dict]:
     with open('database.json', 'rb') as f:
-        database = orjson.loads(f.read())['bypass_information']
+        database = jsonparser.parse(f.read()).at_pointer('/bypass_information')
         return utils.return_results(database, query, threshold, utils.generate_list_for_search('database.json'))
 
 
 @app.route('/app', methods=["GET"])
 def bypass_lookup():
-    parser = reqparse.RequestParser()
-    parser.add_argument('search', required=False)
+    reqparser = reqparse.RequestParser()
+    reqparser.add_argument('search', required=False)
 
-    args = parser.parse_args()
+    args = reqparser.parse_args()
     if args.search is None:
         with open('database.json', 'rb') as f:
-            data = orjson.dumps({'status': 'Successful', 'data': orjson.loads(f.read())['app_list']})
+            data = orjson.dumps({'status': 'Successful', 'data': jsonparser.parse(f.read()).at_pointer('/app_list').as_list()})
     else:
         search_results = return_results_hashable(args.search.lower(), 90)
         if search_results:
