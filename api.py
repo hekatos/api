@@ -8,6 +8,10 @@ from flask_restful import reqparse
 from cachetools.func import ttl_cache
 
 app = Flask(__name__)
+app.config['JSON_SORT_KEYS'] = False
+app.config['JSON_AS_ASCII'] = False
+
+
 utils.init_db(os.path.join('manifests'))
 
 
