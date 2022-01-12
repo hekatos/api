@@ -53,9 +53,12 @@ class GitHubWebhook(Resource):
                     return_results_hashable.cache_clear()
                     return "Rebuilt database", 200
                 elif 'api' in content['repository']['full_name']:
-                    systemd_service = 'jbdetectapi'
-                    os.system('git pull')
-                    os.system(f'sudo /bin/systemctl restart {systemd_service}')
+                    try:
+                        return "Restarting API", 200
+                    finally:
+                        systemd_service = 'jbdetectapi'
+                        os.system('git pull')
+                        os.system(f'sudo /bin/systemctl restart {systemd_service}')
         else:
             return "Signatures didn't match!", 500
 
