@@ -1,6 +1,5 @@
 import os
 import orjson
-import simdjson
 import yaml
 from rapidfuzz import fuzz
 from typing import Optional
