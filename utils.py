@@ -7,7 +7,7 @@ from typing import Optional
 from functools import cache
 try:
     import cysimdjson as simdjson
-except ImportError:
+except (ImportError, ModuleNotFoundError):
     import simdjson
 
 
