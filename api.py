@@ -30,13 +30,19 @@ def bypass_lookup():
     args = parser.parse_args()
     if args.search is None:
         with open('database.json', 'rb') as f:
-            return {'status': 'Successful', 'data': orjson.loads(f.read())['app_list']}
+            data = orjson.dumps({'status': 'Successful', 'data': orjson.loads(f.read())['app_list']})
     else:
         search_results = return_results_hashable(args.search.lower(), 90)
         if search_results:
-            return {'status': 'Successful', 'data': search_results}
+            data = orjson.dumps({'status': 'Successful', 'data': search_results})
         else:
-            return {'status': 'Not Found'}
+            data = orjson.dumps({'status': 'Not Found'})
+
+    return app.response_class(
+        response=data,
+        status=404 if b'Not Found' in data else 200,
+        mimetype="application/json; charset=utf-8"
+    )
 
 
 @app.route('/gh-webhook', methods=["POST"])
