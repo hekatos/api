@@ -5,6 +5,10 @@ import yaml
 from rapidfuzz import fuzz
 from typing import Optional
 from functools import cache
+try:
+    import cysimdjson as simdjson
+except ImportError:
+    import simdjson
 
 
 def init_db(manifests_dir: str) -> None:

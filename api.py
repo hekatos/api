@@ -3,10 +3,13 @@ import hmac
 import hashlib
 import utils
 import orjson
-import simdjson
 from flask import Flask, request
 from flask_restful import reqparse
 from cachetools.func import ttl_cache
+try:
+    import cysimdjson as simdjson
+except ImportError:
+    import simdjson
 
 app = Flask(__name__)
 app.config['JSON_SORT_KEYS'] = False
