@@ -6,7 +6,7 @@ from typing import Optional
 from functools import cache
 
 
-def init_db(manifests_dir: str) -> tuple[dict, list, dict]:
+def init_db(manifests_dir: str) -> None:
     __scriptdir = os.path.dirname(os.path.realpath(__file__))
     bypasses_file = os.path.join(__scriptdir, manifests_dir, 'bypasses.yaml')
     apps_dir = os.path.join(__scriptdir, manifests_dir, 'apps')
@@ -69,7 +69,7 @@ def init_db(manifests_dir: str) -> tuple[dict, list, dict]:
 
 
 @cache
-def markdown_link(name: str, uri: str, sharerepo: Optional[bool] = False) -> str:
+def markdown_link(name: str, uri: str, sharerepo: bool = False) -> str:
     sharerepo_site = "https://sharerepo.stkc.win/?repo="
     return f"[{name}]({sharerepo_site}{uri})" if sharerepo else f"[{name}]({uri})"
 
@@ -84,21 +84,21 @@ def generate_list_for_search(json_file: str) -> list[list]:
 def return_results(list_of_dicts: list[dict], query: str, threshold: int, list_for_search: Optional[list[list]] = None) -> list[dict]:
     query = query.lower()
     scores = list()
-    values = list_for_search if list_for_search else generate_list_for_search(list_of_dicts)
+    values = list_for_search if list_for_search else generate_list_for_search('database.json')
     for index, item in enumerate(values):
         ratios = list()
         partial_ratios = list()
         for value in item:
             ratios.append(fuzz.ratio(str(query), str(value)))
             partial_ratios.append(fuzz.partial_ratio(str(query), str(value)))
-        
+
         partial_score = max(partial_ratios)
         score = max(ratios)
         if score >= threshold or partial_score >= threshold:
-            scores.append({"index": index, "partial_score": partial_score, "score": score})
- 
+            scores.append({"index": int(index), "partial_score": partial_score, "score": score})
+
     sorted_filtered_scores = sorted(scores, key=lambda k: (k['score'], k['partial_score']), reverse=True)
     if len(sorted_filtered_scores) > 0 and sorted_filtered_scores[0]['score'] == 100:
-        return [list_of_dicts[sorted_filtered_scores[0]['index']]]
-    filtered_list_of_dicts = [list_of_dicts[item["index"]] for item in sorted_filtered_scores]
+        return [list_of_dicts[int(sorted_filtered_scores[0]['index'])]]
+    filtered_list_of_dicts = [list_of_dicts[int(item['index'])] for item in sorted_filtered_scores]
     return filtered_list_of_dicts
