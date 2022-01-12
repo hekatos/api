@@ -4,45 +4,42 @@ import hashlib
 import utils
 import orjson
 from flask import Flask, request
-from flask_restful import Resource, Api, reqparse
+from flask_restful import reqparse
 from cachetools.func import ttl_cache
 
 app = Flask(__name__)
-api = Api(app)
 utils.init_db(os.path.join('manifests'))
 
 
-@ttl_cache(maxsize=64, ttl=3600)
+@ttl_cache(maxsize=128, ttl=3600)
 def return_results_hashable(query: str, threshold: int) -> list[dict]:
     with open('database.json', 'rb') as f:
         database = orjson.loads(f.read())['bypass_information']
         return utils.return_results(database, query, threshold, utils.generate_list_for_search('database.json'))
 
 
-class App(Resource):
-    def get(self):
-        parser = reqparse.RequestParser()
-        parser.add_argument('search', required=False)
-        parser.add_argument('fields', required=False)
+@app.route('/app', methods=["GET"])
+def bypass_lookup():
+    parser = reqparse.RequestParser()
+    parser.add_argument('search', required=False)
 
-        args = parser.parse_args()
-        if args.search is None:
-            with open('database.json', 'rb') as f:
-                return {'status': 'Successful', 'data': orjson.loads(f.read())['app_list']}
+    args = parser.parse_args()
+    if args.search is None:
+        with open('database.json', 'rb') as f:
+            return {'status': 'Successful', 'data': orjson.loads(f.read())['app_list']}
+    else:
+        search_results = return_results_hashable(args.search.lower(), 90)
+        if search_results:
+            return {'status': 'Successful', 'data': search_results}
         else:
-            search_results = return_results_hashable(args.search.lower(), 90)
-            if search_results:
-                return {'status': 'Successful', 'data': search_results}
-            else:
-                return {'status': 'Not Found'}
+            return {'status': 'Not Found'}
 
 
-class GitHubWebhook(Resource):
-    def __init__(self):
-        self.webhook_secret = os.environ.get('GITHUB_WEBHOOK_SECRET').encode('utf-8')
-
-    def post(self):
-        signature = 'sha256=' + hmac.new(self.webhook_secret, request.data, hashlib.sha256).hexdigest()
+@app.route('/gh-webhook', methods=["POST"])
+def update_api():
+    if 'GITHUB_WEBHOOK_SECRET' in os.environ:
+        webhook_secret = os.environ.get('GITHUB_WEBHOOK_SECRET').encode('utf-8')
+        signature = 'sha256=' + hmac.new(webhook_secret, request.data, hashlib.sha256).hexdigest()
         if hmac.compare_digest(signature, request.headers.get('X-Hub-Signature-256')):
             content = request.json
             if content['ref'] == 'refs/heads/main':
@@ -61,11 +58,8 @@ class GitHubWebhook(Resource):
                         os.system(f'sudo /bin/systemctl restart {systemd_service}')
         else:
             return "Signatures didn't match!", 500
-
-
-api.add_resource(App, '/app')
-if 'GITHUB_WEBHOOK_SECRET' in os.environ:
-    api.add_resource(GitHubWebhook, '/gh-webhook')
+    else:
+        return "Endpoint disabled due to lack of GITHUB_WEBHOOK_SECRET", 403
 
 
 if __name__ == '__main__':
