@@ -8,7 +8,7 @@ from flask_restful import reqparse
 from cachetools.func import ttl_cache
 try:
     import cysimdjson as simdjson
-except ImportError:
+except (ImportError, ModuleNotFoundError):
     import simdjson
 
 app = Flask(__name__)
