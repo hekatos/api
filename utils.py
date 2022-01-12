@@ -91,7 +91,7 @@ def generate_list_for_search(json_file: str) -> list[list]:
         return list_of_dicts
 
 
-def return_results(list_of_dicts: simdjson.Object, query: str, threshold: int, list_for_search: Optional[list[list]] = None) -> list[dict]:
+def return_results(list_of_dicts, query: str, threshold: int, list_for_search: Optional[list[list]] = None) -> list[dict]:
     query = query.lower()
     scores = list()
     values = list_for_search if list_for_search else generate_list_for_search('database.json')
