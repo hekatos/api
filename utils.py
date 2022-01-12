@@ -6,8 +6,10 @@ from typing import Optional
 from functools import cache
 try:
     import cysimdjson as simdjson
+    from cysimdjson import JSONParser as Parser
 except (ImportError, ModuleNotFoundError):
     import simdjson
+    from simdjson import Parser
 
 
 def init_db(manifests_dir: str) -> None:
@@ -86,7 +88,7 @@ def markdown_link(name: str, uri: str, sharerepo: bool = False) -> str:
 @cache
 def generate_list_for_search(json_file: str) -> list[list]:
     with open(json_file, 'rb') as f:
-        parser = simdjson.Parser()
+        parser = Parser()
         list_of_dicts = parser.parse(f.read()).at_pointer('/search_list').as_list()
         return list_of_dicts
 

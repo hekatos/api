@@ -8,8 +8,10 @@ from flask_restful import reqparse
 from cachetools.func import ttl_cache
 try:
     import cysimdjson as simdjson
+    from cysimdjson import JSONParser as Parser
 except (ImportError, ModuleNotFoundError):
     import simdjson
+    from simdjson import Parser
 
 app = Flask(__name__)
 app.config['JSON_SORT_KEYS'] = False
@@ -17,7 +19,7 @@ app.config['JSON_AS_ASCII'] = False
 
 
 utils.init_db(os.path.join('manifests'))
-jsonparser = simdjson.Parser()
+jsonparser = Parser()
 
 
 @ttl_cache(maxsize=128, ttl=3600)
