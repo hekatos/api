@@ -2,6 +2,7 @@ import os
 import orjson
 import simdjson
 import yaml
+import asyncio
 from rapidfuzz import fuzz
 from typing import Optional
 from functools import cache
@@ -88,21 +89,25 @@ def generate_list_for_search(json_file: str) -> list[list]:
         return list_of_dicts
 
 
-def return_results(list_of_dicts: simdjson.Object, query: str, threshold: int, list_for_search: Optional[list[list]] = None) -> list[dict]:
-    query = query.lower()
-    scores = list()
-    values = list_for_search if list_for_search else generate_list_for_search('database.json')
-    for index, item in enumerate(values):
+async def return_results(list_of_dicts: simdjson.Object, query: str, threshold: int, list_for_search: Optional[list[list]] = None) -> list[dict]:
+    async def score_calculator(query, threshold, index, item):
         ratios = list()
         partial_ratios = list()
         for value in item:
             ratios.append(fuzz.ratio(str(query), str(value)))
             partial_ratios.append(fuzz.partial_ratio(str(query), str(value)))
-
         partial_score = max(partial_ratios)
         score = max(ratios)
         if score >= threshold or partial_score >= threshold:
-            scores.append({"index": int(index), "partial_score": partial_score, "score": score})
+            return {"index": int(index), "partial_score": partial_score, "score": score}
+
+    query = query.lower()
+    scores = list()
+    values = list_for_search if list_for_search else generate_list_for_search('database.json')
+    tasks = list()
+    for index, item in enumerate(values):
+        tasks += [asyncio.create_task(score_calculator(query, threshold, index, item))]
+    scores = filter(None, await asyncio.gather(*tasks))
 
     sorted_filtered_scores = sorted(scores, key=lambda k: (k['score'], k['partial_score']), reverse=True)
     if len(sorted_filtered_scores) > 0 and sorted_filtered_scores[0]['score'] == 100:

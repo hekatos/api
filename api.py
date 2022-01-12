@@ -4,9 +4,9 @@ import hashlib
 import utils
 import orjson
 import simdjson
+from aiocache import cached
 from flask import Flask, request, redirect
 from flask_restful import reqparse
-from cachetools.func import ttl_cache
 from werkzeug.exceptions import HTTPException
 
 app = Flask(__name__)
@@ -18,11 +18,11 @@ utils.init_db(os.path.join('manifests'))
 jsonparser = simdjson.Parser()
 
 
-@ttl_cache(maxsize=128, ttl=3600)
-def return_results_hashable(query: str, threshold: int) -> list[dict]:
+@cached(ttl=1800)
+async def return_results_hashable(query: str, threshold: int) -> list[dict]:
     with open('database.json', 'rb') as f:
         database = jsonparser.parse(f.read()).at_pointer('/bypass_information')
-        return utils.return_results(database, query, threshold, utils.generate_list_for_search('database.json'))
+        return await utils.return_results(database, query, threshold, utils.generate_list_for_search('database.json'))
 
 
 @app.errorhandler(HTTPException)
@@ -31,7 +31,7 @@ def handle_exception(e):
 
 
 @app.route('/app', methods=["GET"])
-def bypass_lookup():
+async def bypass_lookup():
     reqparser = reqparse.RequestParser()
     reqparser.add_argument('search', required=False)
 
@@ -40,7 +40,7 @@ def bypass_lookup():
         with open('database.json', 'rb') as f:
             data = orjson.dumps({'status': 'Successful', 'data': jsonparser.parse(f.read()).at_pointer('/app_list').as_list()})
     else:
-        search_results = return_results_hashable(args.search.lower(), 90)
+        search_results = await return_results_hashable(args.search.lower(), 90)
         if search_results:
             data = orjson.dumps({'status': 'Successful', 'data': search_results})
         else:
