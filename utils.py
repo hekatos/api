@@ -59,9 +59,12 @@ def init_db(manifests_dir: str) -> None:
                 detailed_bypass_info.append(bypass)
             app['bypasses'] = detailed_bypass_info
         db_data.append(app)
-        search_list.append([app['name'].lower(), app['bundleId'].lower()])
         if 'aliases' in app and app['aliases']:
-            search_list += [alias.lower() for alias in app['aliases']]
+            temp = [app['name'].lower(), app['bundleId'].lower()]
+            temp += [alias.lower() for alias in app['aliases']]
+            search_list.append(temp)
+        else:
+            search_list.append([app['name'].lower(), app['bundleId'].lower()])
     apps = [x['name'] for x in db_data]
     apps.sort(key=lambda a: a.lower())
 
