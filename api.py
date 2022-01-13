@@ -68,7 +68,6 @@ def update_api():
                     os.system('git submodule update --recursive --remote')
                     utils.init_db(os.path.join('manifests'))
                     utils.generate_list_for_search.cache_clear()
-                    return_results_hashable.cache_clear()
                     return "Rebuilt database", 200
                 elif 'api' in content['repository']['full_name']:
                     try:
