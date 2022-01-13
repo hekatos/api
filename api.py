@@ -4,6 +4,7 @@ import hashlib
 import utils
 import orjson
 import simdjson
+import logging
 from aiocache import cached
 from flask import Flask, request, redirect
 from flask_restful import reqparse
@@ -13,6 +14,7 @@ app = Flask(__name__)
 app.config['JSON_SORT_KEYS'] = False
 app.config['JSON_AS_ASCII'] = False
 
+logging.basicConfig(filename='search.log', level=logging.WARNING)
 
 utils.init_db(os.path.join('manifests'))
 jsonparser = simdjson.Parser()
@@ -45,6 +47,7 @@ async def bypass_lookup():
             data = orjson.dumps({'status': 'Successful', 'data': search_results})
         else:
             data = orjson.dumps({'status': 'Not Found'})
+            app.logger.warning(f"Could not find app in database: {args.search}")
 
     return app.response_class(
         response=data,
