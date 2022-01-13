@@ -58,7 +58,7 @@ async def bypass_lookup():
 
 @app.route('/gh-webhook', methods=["POST"])
 def update_api():
-    if 'GITHUB_WEBHOOK_SECRET' in os.environ:
+    if 'GITHUB_WEBHOOK_SECRET' in os.environ and request.headers.get('X-Hub-Signature-256'):
         webhook_secret = os.environ.get('GITHUB_WEBHOOK_SECRET').encode('utf-8')
         signature = 'sha256=' + hmac.new(webhook_secret, request.data, hashlib.sha256).hexdigest()
         if hmac.compare_digest(signature, request.headers.get('X-Hub-Signature-256')):
@@ -79,7 +79,7 @@ def update_api():
         else:
             return "Signatures didn't match!", 500
     else:
-        return "Endpoint disabled due to lack of GITHUB_WEBHOOK_SECRET", 403
+        return "Endpoint not allowed. You're missing GITHUB_WEBHOOK_SECRET, or did not provide a signature.", 403
 
 
 if __name__ == '__main__':
