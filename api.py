@@ -51,7 +51,7 @@ async def bypass_lookup():
 
     return app.response_class(
         response=data,
-        status=404 if b'Not Found' in data else 200,
+        status=200,
         mimetype="application/json; charset=utf-8"
     )
 
