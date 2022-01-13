@@ -29,7 +29,7 @@ async def return_results_hashable(query: str, threshold: int) -> list[dict]:
 
 @app.errorhandler(HTTPException)
 def handle_exception(e):
-    return redirect(f"https://http.cat/{e.code}", code=302)
+    return f'<center><img src="https://http.cat/{e.code}"></center>', e.code
 
 
 @app.route('/app', methods=["GET"])
