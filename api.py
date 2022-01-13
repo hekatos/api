@@ -57,7 +57,7 @@ async def bypass_lookup():
 
 
 @app.route('/gh-webhook', methods=["POST"])
-def update_api():
+async def update_api():
     if 'GITHUB_WEBHOOK_SECRET' in os.environ and request.headers.get('X-Hub-Signature-256'):
         webhook_secret = os.environ.get('GITHUB_WEBHOOK_SECRET').encode('utf-8')
         signature = 'sha256=' + hmac.new(webhook_secret, request.data, hashlib.sha256).hexdigest()
@@ -68,6 +68,7 @@ def update_api():
                     os.system('git submodule update --recursive --remote')
                     utils.init_db(os.path.join('manifests'))
                     utils.generate_list_for_search.cache_clear()
+                    await return_results_hashable.cache._clear()
                     return "Rebuilt database", 200
                 elif 'api' in content['repository']['full_name']:
                     try:
