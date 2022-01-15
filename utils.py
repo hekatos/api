@@ -2,7 +2,7 @@ import os
 import orjson
 import simdjson
 import yaml
-import asyncio
+import concurrent.futures
 from rapidfuzz import fuzz
 from typing import Optional
 from functools import cache
@@ -85,12 +85,11 @@ def markdown_link(name: str, uri: str, sharerepo: bool = False) -> str:
 def generate_list_for_search(json_file: str) -> list[list]:
     with open(json_file, 'rb') as f:
         parser = simdjson.Parser()
-        list_of_dicts = parser.parse(f.read()).at_pointer('/search_list').as_list()
-        return list_of_dicts
+        return parser.parse(f.read()).at_pointer('/search_list').as_list()  # type: ignore
 
 
-async def return_results(list_of_dicts: simdjson.Object, query: str, threshold: int, list_for_search: Optional[list[list]] = None) -> list[dict]:
-    async def score_calculator(query, threshold, index, item):
+async def return_results(list_of_dicts: simdjson.Array, query: str, threshold: int, list_for_search: Optional[list[list]] = None) -> list[dict]:
+    def score_calculator(query: str, threshold: int, index: int, item: list[list]) -> Optional[dict]:
         ratios = list()
         partial_ratios = list()
         for value in item:
@@ -100,17 +99,23 @@ async def return_results(list_of_dicts: simdjson.Object, query: str, threshold: 
         score = max(ratios)
         if score >= threshold or partial_score >= threshold:
             return {"index": int(index), "partial_score": partial_score, "score": score}
+        else:
+            return None
 
     query = query.lower()
     scores = list()
     values = list_for_search if list_for_search else generate_list_for_search('database.json')
-    tasks = list()
-    for index, item in enumerate(values):
-        tasks += [asyncio.create_task(score_calculator(query, threshold, index, item))]
-    scores = filter(None, await asyncio.gather(*tasks))
+    with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
+        tasks = list()
+        for index, item in enumerate(values):
+            tasks.append(executor.submit(score_calculator, query, threshold, index, item))
+        for future in concurrent.futures.as_completed(tasks):
+            res = future.result()
+            if res:
+                scores.append(res)
 
     sorted_filtered_scores = sorted(scores, key=lambda k: (k['score'], k['partial_score']), reverse=True)
     if len(sorted_filtered_scores) > 0 and sorted_filtered_scores[0]['score'] == 100:
-        return [list_of_dicts.at_pointer(f"/{sorted_filtered_scores[0]['index']}").as_dict()]
-    filtered_list_of_dicts = [list_of_dicts.at_pointer(f"/{item['index']}").as_dict() for item in sorted_filtered_scores]
+        return [list_of_dicts.at_pointer(f"/{sorted_filtered_scores[0]['index']}").as_dict()]  # type: ignore
+    filtered_list_of_dicts = [list_of_dicts.at_pointer(f"/{item['index']}").as_dict() for item in sorted_filtered_scores]  # type: ignore
     return filtered_list_of_dicts

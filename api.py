@@ -5,9 +5,9 @@ import utils
 import orjson
 import simdjson
 import logging
-from aiocache import cached
-from flask import Flask, request, redirect
-from flask_restful import reqparse
+from aiocache import cached  # type: ignore
+from flask import Flask, request
+from flask_restful import reqparse  # type: ignore
 from werkzeug.exceptions import HTTPException
 
 app = Flask(__name__)
@@ -23,7 +23,8 @@ jsonparser = simdjson.Parser()
 @cached(ttl=1800)
 async def return_results_hashable(query: str, threshold: int) -> list[dict]:
     with open('database.json', 'rb') as f:
-        database = jsonparser.parse(f.read()).at_pointer('/bypass_information')
+        database = jsonparser.parse(f.read()).at_pointer('/bypass_information')  # type: ignore
+        assert isinstance(database, simdjson.Array)
         return await utils.return_results(database, query, threshold, utils.generate_list_for_search('database.json'))
 
 
