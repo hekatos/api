@@ -14,7 +14,7 @@ app = Flask(__name__)
 app.config['JSON_SORT_KEYS'] = False
 app.config['JSON_AS_ASCII'] = False
 
-logging.basicConfig(filename='search.log', level=logging.WARNING, format='%(asctime)s %(levelname)s %(name)s %(threadName)s: %(message)s')
+logging.basicConfig(filename='search.log', level=logging.WARNING, format='%(asctime)s %(levelname)s %(name)s: %(message)s')
 
 utils.init_db(os.path.join('manifests'))
 jsonparser = simdjson.Parser()
@@ -47,7 +47,7 @@ async def bypass_lookup():
             data = orjson.dumps({'status': 'Successful', 'data': search_results})
         else:
             data = orjson.dumps({'status': 'Not Found'})
-            app.logger.warning(f"Could not find app in database: {args.search} [{request.headers.get('User-Agent')}]")
+            app.logger.warning(f"[{request.headers.get('User-Agent')}] Could not find app in database: {args.search}")
 
     return app.response_class(
         response=data,
