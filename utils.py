@@ -36,8 +36,8 @@ def init_db(manifests_dir: str) -> None:
 
                     if 'repository' in bypasses[bypass['name']]:
                         bypass['repository'] = bypasses[bypass['name']]['repository']
-                        bypass['repository']['uri'] = f"https://sharerepo.stkc.win/?repo={bypasses[bypass['name']]['repository']['uri']}" \
-                            if not bypass['repository']['uri'].startswith("https://sharerepo.stkc.win/?repo=") \
+                        bypass['repository']['uri'] = f"https://beerpsi.me/sharerepo/?repo={bypasses[bypass['name']]['repository']['uri']}" \
+                            if not bypass['repository']['uri'].startswith("https://beerpsi.me/sharerepo/?repo=") \
                             else bypass['repository']['uri']
                     else:
                         bypass['repository'] = None
@@ -77,7 +77,7 @@ def init_db(manifests_dir: str) -> None:
 
 @cache
 def markdown_link(name: str, uri: str, sharerepo: bool = False) -> str:
-    sharerepo_site = "https://sharerepo.stkc.win/?repo="
+    sharerepo_site = "https://beerpsi.me/sharerepo/?repo="
     return f"[{name}]({sharerepo_site}{uri})" if sharerepo else f"[{name}]({uri})"
 
 
