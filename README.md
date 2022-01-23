@@ -24,6 +24,33 @@ A simple API intended for looking up bypass + app combinations. It currently has
 }
 ```
 
+`GET /bypass`: List all known bypass tweaks.
+```json
+{
+  "status": "Successful",
+  "data": {
+    "A-Bypass": {
+      "guide": "https://bypass.beerpsi.me/#/tools/tweaks?id=a-bypass",
+      "repository": {
+        "uri": "https://beerpsi.me/sharerepo/?repo=https://repo.co.kr"
+      }
+    },
+    "AppStore++": {
+      "notes": "Downgrade the app to the specified version.",
+      "repository": {
+        "uri": "https://beerpsi.me/sharerepo/?repo=https://cokepokes.github.io"
+      }
+    },
+    "Axis Bank Patch": {
+      "repository": {
+        "uri": "https://beerpsi.me/sharerepo/?repo=https://bypass.beerpsi.me/repo"
+      }
+    }
+  }
+}
+```
+
+
 `GET /app?search=<app name>`: Lookup the app with the keyword `<app name>`  
 **Request:** `/app?search=balls`
 ```json

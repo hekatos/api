@@ -71,7 +71,7 @@ def init_db(manifests_dir: str) -> None:
     apps.sort(key=lambda a: a.lower())
 
     with open('database.json', 'wb') as f:
-        f.write(orjson.dumps({'app_list': apps, 'search_list': search_list, 'bypass_information': db_data}))
+        f.write(orjson.dumps({'app_list': apps, 'search_list': search_list, 'bypass_list': bypasses, 'bypass_information': db_data}))
     markdown_link.cache_clear()
 
 

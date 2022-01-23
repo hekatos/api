@@ -33,6 +33,17 @@ def handle_exception(e):
     return f'<center><img src="https://http.cat/{e.code}"></center>', e.code
 
 
+@app.route('/bypass', methods=["GET"])
+async def bypass_list():
+    with open('database.json', 'rb') as f:
+        data = orjson.dumps({'status': 'Successful', 'data': jsonparser.parse(f.read()).at_pointer('/bypass_list').as_dict()})
+    return app.response_class(
+        response=data,
+        status=200,
+        mimetype="application/json; charset=utf-8"
+    )
+
+
 @app.route('/app', methods=["GET"])
 async def bypass_lookup():
     reqparser = reqparse.RequestParser()
