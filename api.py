@@ -54,7 +54,7 @@ async def bypass_lookup():
         with open('database.json', 'rb') as f:
             data = orjson.dumps({'status': 'Successful', 'data': jsonparser.parse(f.read()).at_pointer('/app_list').as_list()})
     else:
-        search_results = await return_results_hashable(args.search.lower(), 80)
+        search_results = await return_results_hashable(args.search.lower(), 86)
         if search_results:
             data = orjson.dumps({'status': 'Successful', 'data': search_results})
         else:
