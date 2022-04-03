@@ -1,3 +1,8 @@
+# Deprecation notice
+It has been a fun while, but this was my first API, the codebase is horrible and the API went down constantly, so it will be archived. Consider using [AppleDB](https://github.com/emily/appledb) to query bypasses.
+
+----
+
 Current API: `https://beerpsi.me/api/v1/`
 
 # API
